@@ -46,7 +46,7 @@ Artefacts - British engligh, artifacts, american english. Former used throughout
 
 We begin by identifying what data we need to automate. This step is usually resource-intensive, so an arbitrary (and vetted) software product will be used for this example.
 
-Then we break-down the full pipeline into "components", and semi-manually run these to illustrate what the tools are doing.
+Then we break-down the full pipeline into "components", and semi-manually run these to illustrate what the tools are doing. I.e., we run through producing the compliance artefacts once step-by-step, and see what happens when we run a "generate compliance artefacts" command in CI.
 
 The output of the process (the compliance artefacts) will be shown. These will be in the form of plain text files, which can be compressed if required.
 
@@ -57,6 +57,14 @@ Implementing the process on a CI system is not covered.
 This only covers generation of compliance artefacts for the application itself. It is likely that additional FOSS is used in any shipped product (Docker container, GPU drivers, etc.) but this process is for the application layer only.
 
 We won't consider legal requirements such as how the jurisdiction your code is shipped to may affect your obligations.
+
+## The sample project
+
+### OpenBLAS
+
+BLAS (basic linear algebra subprograms) is a widely used library for matrix and vector calculations. It's open source, the reference implementation (from https://www.netlib.org/blas/) isn't "licensed" per se, rather it has some unusual wording about being free to use but to add notices if anything is modified and to provide acknowledgement for the authors.
+
+OpenBLAS has the BSD-3-Clause out-licence, and the full source (which we look at here) is available on GitHub (https://github.com/xianyi/OpenBLAS).
 
 ## Identifying the requried artefacts
 
@@ -70,7 +78,19 @@ Are there any *dependencies*?
 
 Are there any *snippets* present?
 
-In this case, there is:
+In this case, all of the source code is provided in this monorepo. We can run our tools here without requiring any additional downloads.
+
+Recall that build tools won't end up in the distributed binary, therefore you have no need to concern yourselves with licences for them (typically, but never seen a case where this is not the case).
+
+Licences are BSD-3-Clause, therefore our obligations are simply: Provide copyright notices (all of them!) and the licence text. * another obligation is to not use the name of the project in marketing, but this does not impact the compliance artefacts r.e. openchain
+
+We also see that it doesn't matter whether the code is distributed as source or in binary form. The artefacts are required* note that if distributed as source code, then the compliance materials *will be provided automatically as they are contained within the source itself!*
+
+For this we assume the binary is distributed, and providing source code is unsuitable for some reason.
+
+Note: providing the full source code for components licensed permissively is not *required* but it may be one way to comply! Although, if you have more than one component with different obligations then things can get messy quickly, hence, automation...
+
+## 
 
 
 
