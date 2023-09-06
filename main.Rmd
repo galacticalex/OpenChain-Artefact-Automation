@@ -108,7 +108,7 @@ It is prudent to manually run a SCA before implementing any automation. Like sho
 
 Scancode can be run from the command-line. So a developer, who is working inside the development repo, can simply use:
 
-```{bash}
+```{bash, eval=F}
 pwd
 /home/demo/OpenChain-Artefact-Automation/OpenBLAS/
 scancode -clp -n 18 --csv ScanOut.csv .
@@ -127,7 +127,7 @@ which will run scancode on the source repo. This assume that scancode has been i
 
 `cd` to the installation directory, then
 
-```{bash}
+```{bash, eval=F}
 git clone --depth=1 https://github.com/nexB/scancode-toolkit.git
 cd ./scancode
 ./scancode --help
