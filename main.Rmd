@@ -36,11 +36,21 @@ Artefacts - British engligh, artifacts, american english. Former used throughout
 
 ### Scancode toolkit
 
+Our favorite OSS SCA tool (https://github.com/nexB/scancode-toolkit). Fully featured, well supported, active community. Straightforward to integrate into existing pipelines (run Python script direct from the repo).
+
+Runs comprehensive battery of regex patterns on source code for licence/copyright matches. Huge test suite. 
+
 ### R
+
+Statistical computing programming language. This is the author's personal preference (a dark art) although Python would work, and bash scripts would also work. No libraries are required, just Base R.
 
 ### Scripts
 
-### GitHub
+These are the "glue" that holds togheter the pipeline. These will all be written in R.
+
+### Git
+
+The code we review will be located in a Git repository. *this* repo (OpenChain...) contains a submodule to our demonstration project, OpenBLAS (more on this project below).
 
 ## Overview
 
@@ -56,7 +66,9 @@ Implementing the process on a CI system is not covered.
 
 This only covers generation of compliance artefacts for the application itself. It is likely that additional FOSS is used in any shipped product (Docker container, GPU drivers, etc.) but this process is for the application layer only.
 
-We won't consider legal requirements such as how the jurisdiction your code is shipped to may affect your obligations.
+We won't consider legal requirements, such as how the jurisdiction your code is shipped to may affect your obligations.
+
+We won't consider engineer considerations, such as caching SCA results.
 
 ## The sample project
 
@@ -90,7 +102,19 @@ For this we assume the binary is distributed, and providing source code is unsui
 
 Note: providing the full source code for components licensed permissively is not *required* but it may be one way to comply! Although, if you have more than one component with different obligations then things can get messy quickly, hence, automation...
 
-## 
+## Initial SCA
+
+It is prudent to manually run a SCA before implementing any automation. Like shopping for bug-spray, it is important to know *what will work* before spending any money (or developer time, resources, etc.) on the thing. It would be disastrous to implement compliance automation and a year down-the-line realise that it wasn't identifying issues appropriately (or even worse, it *was* identifying them but you didn't notice)!
+
+Scancode can be run from the command-line. So a developer, who is working inside the development repo, can simply use:
+
+```{bash}
+pwd
+/home/demo/OpenChain-Artefact-Automation/OpenBLAS/
+scancode -clp -n 18 --csv ScanOut.csv .
+```
+
+which will run scancode on the source repo. This assume that scancode has been installed (added to path) et cetera (see Appendix A for simple scancode installation instructions).
 
 
 
@@ -98,3 +122,15 @@ Note: providing the full source code for components licensed permissively is not
 
 
 
+
+## Appendix A: Scancode installation
+
+`cd` to the installation directory, then
+
+```{bash}
+git clone --depth=1 https://github.com/nexB/scancode-toolkit.git
+cd ./scancode
+./scancode --help
+```
+
+Running `./scancode --help` will setup scancode for first use. There are other methods in the documentation (https://scancode-toolkit.readthedocs.io/en/stable/) but the above is, clearly, very simple. The above can be copied into a `.sh` script, Docker `RUN` directive, et cetera, as required.
