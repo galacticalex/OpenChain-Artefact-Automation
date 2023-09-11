@@ -1,3 +1,6 @@
 [submodule "OpenBLAS"]
 	path = OpenBLAS
 	url = https://github.com/xianyi/OpenBLAS.git
+[submodule "compliance-artefact-generator"]
+	path = compliance-artefact-generator
+	url = https://github.com/galacticalex/compliance-artefact-generator.git
