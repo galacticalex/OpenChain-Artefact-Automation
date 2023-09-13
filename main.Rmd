@@ -122,37 +122,46 @@ There are various ways of doing this, if you run the `--csv` output format then 
 
 ```{r}
 copyright_data <- read.csv("ScanOut.csv") # load the scan results
-licences <- unique(copyright_data$license_expression) # summarise 'unique' licence (so we only see one of each result)
+licences <- unique(copyright_data$detected_license_expression_spdx) 
+# summarise 'unique' licences in the dataset (so we only see one of each result)
 licences # display them
 ```
 
-This output is using Scancode's internal naming system, but it is based on SPDX identifiers. Look at `apache-2.0` this is simply the SPDX ID with a lower case `a`.
+These are SPDX IDs where one exists, or a licence reference (`LiceseRef` where there is an unknown detection).
 
-There doesn't appear to be too much to review here, these are all permissive or variants of, except for that results of `proprietary-license`. You should not be too alarmed at these results (at least in the first instance) because Scancode is quite *greedy* with its results. It will generate more false positives than omissions (it's generally better this way, as you can manually review the results, you cannot manually review what you do not know exists)!
+There doesn't appear to be too much to review here, these are all permissive or variants of, except for that result of `LicenseRef-scancode-proprietary-license`. You should not be too alarmed at these results (at least in the first instance) because Scancode is quite *greedy* with its results. It will generate more false positives than omissions (it's generally better this way, as you can manually review the results, you cannot manually review what you do not know exists)!
 
 Let's double check this result, to see how often it appears, and what is triggering this result in the scan.
 
 ```{r}
-copyright_data[copyright_data$license_expression == "proprietary-license", ]["path"] # selecting results that match the expression in brackets [expression]
+copyright_data[copyright_data$detected_license_expression_spdx == "LicenseRef-scancode-proprietary-license", ]["path"] 
+# selecting results that match the expression in brackets [expression]
 # and then from the results, extract the path of the file (*where* the scan found it)
 ```
 
-So the `proprietary-license` results came from the LAPACKE readme. We'll assume that this check went well for the purposes of this demonstration, but there are a few more notes on this in Appendix 2, including the README file itself.
+So the proprietary license result came from the LAPACKE readme. We won't go into this now, but assume that this check went well for the purposes of this demonstration, but there are a few more notes on this in Appendix 2, including the README file itself.
 
-It would be good practice to verify all of the licence results, at least by sample, but as everything is permissive here there's unlikely to be any major issues so we'll proceed with generating the artefacts.
+It would be good practice to verify all of the licence results, at least by sample, but as everything is permissive here there's unlikely to be any major issues, *and this aligns with our expectations and understanding of OpenBLAS*, so, we'll proceed with generating the artefacts.
 
 ## Generating artefacts
 
 Now that the scan results have been collected and reviewed for problems, we can use whatever means at our disposal to generate appropriate artefacts. This is an inherently 'wooly' statement, because it depends on the licences as to what artefacts must be provided. There are also various way in which the artefacts *could* be provided for any particular licence. What follows is appropriate for permissive licences, OpenChain compliance, and note that no source code provision is required.
 
-Some scripts have been developed by Orcro for this particular task, and are available under open source licences for you to freely use yourselves if you wish: https://github.com/galacticalex/compliance-artefact-generator, they are also as a submodule in this demo repository, we use some functions from these now.
+Some scripts have been developed by Orcro for this particular task, and are available under Apache-2.0 for you to freely use yourselves, or to learn more about generating artefacts, if you wish: https://github.com/galacticalex/compliance-artefact-generator, they are also as a submodule in this demo repository.
+
+We're going to use a simplified script, which takes raw scancode output and produces the files. It has no user-interface to speak of however. Let's see how it works:
 
 ```{r}
 
 ```
 
+### Aside, scancode data
 
+```{r}
+names(copyright_data) # view the variables that scancode extracts
+```
 
+You can see there is quite a lot going on under-the-hood with scancode. In particular look at those `license_match*` variables. These are columns in the `.csv` output file. They report how *sure* scancode is that it has found a match. We'll simplify this analysis and assume that results are reliable (and this is typically the case).
 
 ## Appendix A: Scancode installation
 
