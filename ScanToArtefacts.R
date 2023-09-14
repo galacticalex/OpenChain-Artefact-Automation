@@ -1,3 +1,7 @@
+##
+## Comment header including readme ----
+##
+
 # ScanToArtefacts.R
 # 
 # SPDX-FileCopyrightText: 2023 Orcro Limited <team@orcro.co.uk>
@@ -48,20 +52,24 @@
 # 
 # The script requires an internet connection to function.
 
+##
+## End section ----
+##
+
 
 ##
 ## Environment variables and setting start ----
 ## 
 
-warnStatus = getOption("warn")
+warnStatus <- getOption("warn")
 
-options(warn = -1)
+options(warn = (-1))
 
-artefactFileNames = c("Licensing_Overview.md", 
-                      "Licensing_Appendix_1.md", 
-                      "Licensing_Appendix_2.md")
+artefactFileNames <- c("Licensing_Overview.md", 
+                       "Licensing_Appendix_A.md", 
+                       "Licensing_Appendix_B.md")
 
-args = commandArgs(trailingOnly = T)
+args <- commandArgs(trailingOnly = T)
 
 ##
 ## End section ----
@@ -72,11 +80,11 @@ args = commandArgs(trailingOnly = T)
 ## Error message definitions start ----
 ## 
 
-errorHeader = "\n\x1b[31;1mError.\x1b[0m Detail:\n\n"
-errorFooter = "\n\n\x1b[31mteam@orcro.co.uk\x1b[0m\n\n"
+errorHeader <- "\n\x1b[31;1mError.\x1b[0m Detail:\n\n"
+errorFooter <- "\n\n\x1b[31mteam@orcro.co.uk\x1b[0m\n\n"
 
 #1
-errorArgsNumber = paste0(errorHeader, 
+errorArgsNumber <- paste0(errorHeader, 
                          "The arguments are not specified correctly.",
                          "The command should look like this:\n\n\t", 
                          "Rscript ScanToArtefacts.R \x1b[36mScanOut\x1b[0m.csv", 
@@ -84,22 +92,16 @@ errorArgsNumber = paste0(errorHeader,
                          "with the name of your data file.", 
                          errorFooter)
 #2
-errorFileExists = paste0(errorHeader, 
+errorFileExists <- paste0(errorHeader, 
                          "An artefact output file(s) already exists. ", 
                          "To prevent data loss, move the existing file(s)", 
                          " out of this directory.", 
                          errorFooter)
 
 #3
-errorInputMissing = paste(errorHeader, 
+errorInputMissing <- paste(errorHeader, 
                           "The specified scan result file does not exist.",
                           errorFooter) 
-
-#all
-errorMessages = c(errorArgsNumber, 
-                  errorFileExists, 
-                  errorInputMissing)
-
 
 ## 
 ## End section ----
@@ -110,21 +112,23 @@ errorMessages = c(errorArgsNumber,
 # File Content Start ----
 ##
 
-overviewText = paste0("# Overview\n\nThis software contains a number of open source components. For a summary, see \n", 
-                      "below. For the relevant licence texts, see Appendix A. For the relevant notices \n", 
-                      "and attributions etc., see Appendix B.\n\n", 
-                      "Not all components listed may be incorporated in, or may necessarily have \n", 
-                      "generated derivative works which are incorporated in the firmware, but were \n", 
-                      "used during the build process.\n\n", 
-                      "Where a range of dates is given after a copyright notice, this should be taken \n", 
-                      "to imply that copyright is asserted for every year within that range, inclusive \n", 
-                      "of the years stated.\n\n", 
-                      "## Components and Licences")
+# The overview text here may be modified to suit a specific use-case
 
-appendixAText = "# Appendix A: Licence Texts"
-appendixBText = "# Appendix B: Notices and Attribution"
+overviewText <- paste0("# Overview\n\nThis software contains a number of open source components. For a summary, see \n", 
+                       "below. For the relevant licence texts, see Appendix A. For the relevant notices \n", 
+                       "and attributions et cetera, see Appendix B.\n\n", 
+                       "Not all components listed may be incorporated in, or may necessarily have \n", 
+                       "generated derivative works which are incorporated in the firmware, but were \n", 
+                       "used during the build process.\n\n", 
+                       "Where a range of dates is given after a copyright notice, this should be taken \n", 
+                       "to imply that copyright is asserted for every year within that range, inclusive \n", 
+                       "of the years stated.\n\n", 
+                       "## Components and Licences")
 
-genericFileContent = c(overviewText, appendixAText, appendixBText)
+appendixAText <- "# Appendix A: Licence Texts"
+appendixBText <- "# Appendix B: Notices and Attribution"
+
+genericFileContent <- c(overviewText, appendixAText, appendixBText)
 
 ##
 # File Content End ----
@@ -135,47 +139,116 @@ genericFileContent = c(overviewText, appendixAText, appendixBText)
 # Function Definitions Start ----
 ##
 
-outputFile = function(fileText, fileName) {
+outputFile <- function(fileText, fileName) {
+    
     write(x = fileText, file = fileName)
+    
 }
 
-generateOverviewText = function(softwareName, componentNames, licences) {
+dataPrep <- function(raw_sca) {
     
-    dat = as.data.frame(cbind(softwareName, 
-                              componentNames, 
-                              licences))
+    # subset only relevant fields (1, 4, 20)
+    # then delete empty rows (will have contained now-unnecessary data)
     
-    dat = split(dat, dat$softwareName)
+    out <- raw_sca[!(raw_sca$detected_license_expression_spdx == "" & 
+                  raw_sca$copyright == ""), c(1, 4, 20)]
     
-    t = function(d) {
-        header = paste0("\n\n### ", d[1, 1], "\n\n")
-        
-        rest = paste0(rep("Component: ", length(d[2])), 
-                      unlist(d[2]), 
-                      rep(" - Licence: ", length(d[3])), 
-                      unlist(d[3]), 
-                      rep("\n", 4), collapse = "")
-        
-        paste0(header, rest)
+    out[out == ''] <- NA
+    
+    aggregate(. ~ path, data = out, FUN = na.omit, na.action = "na.pass")
+    
+}
+
+generateOverviewText <- function(tidy_data) {
+    
+    # This is hard-coded for convenience as it is known these artefacts are for
+    # a single library
+    
+    component_name <- "\n\nOpenBlas"
+    
+    out_licence <- "BSD-3-Clause"
+    
+    out <- paste(component_name, out_licence, sep = " - ")
+    
+    paste0(overviewText, out, "\n")
+    
+}
+
+generateAppendixA = function(tidy_data) {
+    
+    # tidying list of licences
+    l <- unlist(strsplit(unlist(tidy_data$detected_license_expression_spdx), " AND "))
+    l <- unique(l)
+    l <- l[l != "N/A"]
+    l <- l[-grep("License", l)]
+    l <- gsub("[\\(|\\)]", "", l)
+    
+    # setup urls for downloading
+    first <- rep("https://raw.githubusercontent.com/spdx/license-list-data/master/text/", length(l))
+    last <- rep(".txt", length(l))
+    dls <- paste0(first, l, last)
+    
+    # local "out" is a buffer, if one dl fails, the script will abort and may 
+    # leave artefacts
+    out <- appendixAText
+    
+    # user info
+    cat("\n\n Licence texts will now be downloaded...\n\n")
+    Sys.sleep(2)
+    
+    for (l in dls) {
+        download.file(l, destfile = "licence.tmp", 
+                      method = "wget", 
+                      quite = TRUE)
+        out = paste0(out, "\n\n--------------------\n\n", 
+                     readChar("licence.tmp", file.info("licence.tmp")$size))
+        file.remove("licence.tmp")
     }
     
-    pre_out = lapply(dat, t)
+    cat("\n\n Removing temporary files...\n\n")
+    Sys.sleep(2)
     
-    out = paste0(pre_out, collapse = "")
+    out
+}
+
+generateAppendixB = function(files, licences, copyrights) {
+    out = appendixBText
     
-    paste0(overviewText, out)
+    d = as.data.frame(cbind(files, licences, copyrights))
+    
+    d = d[d$licences != "" | d$copyrights != "", ]
+    
+    d = merge(d, d, by = 1)
+    
+    d = d[d$copyrights.x != "" & d$licences.y != "", ]
+    
+    d = d[c(1, 3, 4)]
+    
+    d$files = gsub("^sources/", "", d$files)
+    
+    for (i in 1:nrow(d)) {
+        entry = paste0("\n\n---------------\n", 
+                       "\nFile: ", d[i, 1],
+                       "\nLicence: ", d[i, 2], 
+                       "\nCopyright statement(s): ", d[i, 3])
+        out = paste0(out, entry)
+    }
+    
+    out
 }
 
 generateArtefacts = function() {
     
-    sca_data <- read.csv(args[1])
+    sca_data <- dataPrep(read.csv(args[1])) # tidy the data
     
-    sca_data <- sca_data[, c(1, 2, 4, 20)]
+    # generate the artefacts - there is some unnecessary moving of data around 
+    # in memory, but this simplifies the script a bit (and it's sufficiently
+    # performant anyway)
     
-    print(names(sca_data))
+    outputFile(generateOverviewText(sca_data), "Licensing_Overview.md")
+    outputFile(generateAppendixA(sca_data), "Licensing_Appendix_A.md")
+    # outputFile(generateAppendixB(sca_data), "Licensing_Appendix_B.md")
     
-    # data2 = read.csv(args[2])
-    # 
     # outputFile(generateOverviewText(data[[1]], 
     #                                 data[[2]], 
     #                                 data[[4]]), 
@@ -200,39 +273,37 @@ generateArtefacts = function() {
 # Program Logic Start ----
 ##
 
-if (length(args) != 1) {
+if (length(args) != 1) { # incorrect number of cli arguments?
+    
     cat(errorArgsNumber)
-} else {
+    
+} else if (any(artefactFileNames %in% dir())) { # any pre-existing output files?
+    
+    cat(errorFileExists)
+    
+} else if (file.exists(args)) { # does the input data exist?
+    
     generateArtefacts()
+    
+} else {
+    
+    cat(errorInputMissing) # if input data doesn't exist
+    
 }
-
-#if (length(args) != 2) {
-#    cat(errorMessages[1])
-#} else if (artefactFileNames %in% dir()) {
-#    cat(errorMessages[2])
-#} else if (file.exists(args)) {
-#    generateArtefacts()
-#} else {
-#    cat(errorMessages[3])
-#}
 
 ##
 # Program Logic End ----
 ##
 
 
-## 
-## Testing and scratch ----
-## 
+##
+# Environment Cleanup ----
+##
 
-#cat(errorArgsNumber)
-#print("")
-#cat(errorInputMissing)
-#print("")
-#cat(errorFileExists)
+options(warn = warnStatus)
 
-## 
-## End section ----
-## 
+rm(args, artefactFileNames, warnStatus, generateArtefacts, outputFile)
 
-
+##
+# Environment Cleanup End ----
+##

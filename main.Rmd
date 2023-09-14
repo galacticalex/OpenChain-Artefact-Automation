@@ -76,7 +76,7 @@ We won't consider engineer considerations, such as caching SCA results.
 
 BLAS (basic linear algebra subprograms) is a widely used library for matrix and vector calculations. It's open source, the reference implementation (from https://www.netlib.org/blas/) isn't "licensed" per se, rather it has some unusual wording about being free to use but to add notices if anything is modified and to provide acknowledgement for the authors.
 
-OpenBLAS has the BSD-3-Clause out-licence, and the full source (which we look at here) is available on GitHub (https://github.com/xianyi/OpenBLAS).
+OpenBLAS has the BSD-3-Clause out-licence, and the full source (which we look at here) is available on GitHub (https://github.com/xianyi/OpenBLAS). We consider the compiled code where no additional third-party libraries have been included via `cmake`.
 
 ## Identifying the requried artefacts
 
@@ -151,9 +151,11 @@ Some scripts have been developed by Orcro for this particular task, and are avai
 
 We're going to use a simplified script, which takes raw scancode output and produces the files. It has no user-interface to speak of however. Let's see how it works:
 
-```{r}
-
+```{bash, eval=F}
+Rscript ScanToArtefacts.R ScanOut.csv
 ```
+
+We use the `Rscript` command line tool to run the script `ScanToArtefacts.R` on the SCA data file `ScanOut.csv`. This is very simply to put into a meta-level script for automation, it may simply be pasted into a `.sh` file.
 
 ### Aside, scancode data
 
@@ -162,6 +164,26 @@ names(copyright_data) # view the variables that scancode extracts
 ```
 
 You can see there is quite a lot going on under-the-hood with scancode. In particular look at those `license_match*` variables. These are columns in the `.csv` output file. They report how *sure* scancode is that it has found a match. We'll simplify this analysis and assume that results are reliable (and this is typically the case).
+
+From before, there are some scancode results that were not SPDX standard IDs, I have replaced these with appropriate data - we won't go through this now.
+
+### Resuming
+
+Here's a snippet of the script:
+
+```{r, eval=F}
+# main function here
+```
+
+The entire script is only a couple hundred lines long. We extract relevant data from the SCA results, then wrangle it into a suitable output format. There are some quality of life-checks (ensuring that no data is overwritten). The file output is handled by a helper function elsewere in the script.
+
+After running the script the working directory will contain the following files:
+
+- Licensing_Overview.md
+- Licensing_Appendix_1.md
+- Licensing_Appendix_2.md
+
+And we can view the contents of each of these files - they are in plain text. 
 
 ## Appendix A: Scancode installation
 
