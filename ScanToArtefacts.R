@@ -77,7 +77,7 @@ args <- commandArgs(trailingOnly = T)
 
 
 ## 
-## Error message definitions start ----
+## Message definitions start ----
 ## 
 
 errorHeader <- "\n\x1b[31;1mError.\x1b[0m Detail:\n\n"
@@ -102,6 +102,10 @@ errorFileExists <- paste0(errorHeader,
 errorInputMissing <- paste(errorHeader, 
                           "The specified scan result file does not exist.",
                           errorFooter) 
+
+successMessage <- paste0("\n\x1b[32;1mSuccess!\x1b[0m Detail:\n\n",
+                        "No problems detected, compliance artefacts are now in",
+                        " the working directory.\n\n")
 
 ## 
 ## End section ----
@@ -211,27 +215,16 @@ generateAppendixA = function(tidy_data) {
     out
 }
 
-generateAppendixB = function(files, licences, copyrights) {
-    out = appendixBText
+generateAppendixB = function(tidy_data) {
     
-    d = as.data.frame(cbind(files, licences, copyrights))
+    out <- appendixBText
     
-    d = d[d$licences != "" | d$copyrights != "", ]
-    
-    d = merge(d, d, by = 1)
-    
-    d = d[d$copyrights.x != "" & d$licences.y != "", ]
-    
-    d = d[c(1, 3, 4)]
-    
-    d$files = gsub("^sources/", "", d$files)
-    
-    for (i in 1:nrow(d)) {
-        entry = paste0("\n\n---------------\n", 
-                       "\nFile: ", d[i, 1],
-                       "\nLicence: ", d[i, 2], 
-                       "\nCopyright statement(s): ", d[i, 3])
-        out = paste0(out, entry)
+    # sloppy! but...
+    for (i in 1:nrow(tidy_data)) {
+        entry <- paste0("\n\n---------------\n", 
+                       "\nFile: ", tidy_data[i, 1],
+                       "\nCopyright statement(s): ", tidy_data[i, 3])
+        out <- paste0(out, entry)
     }
     
     out
@@ -247,21 +240,8 @@ generateArtefacts = function() {
     
     outputFile(generateOverviewText(sca_data), "Licensing_Overview.md")
     outputFile(generateAppendixA(sca_data), "Licensing_Appendix_A.md")
-    # outputFile(generateAppendixB(sca_data), "Licensing_Appendix_B.md")
+    outputFile(generateAppendixB(sca_data), "Licensing_Appendix_B.md")
     
-    # outputFile(generateOverviewText(data[[1]], 
-    #                                 data[[2]], 
-    #                                 data[[4]]), 
-    #            artefactFileNames[1])
-    # 
-    # outputFile(generateAppendixA(data[[4]], 
-    #                              data[[8]]), 
-    #            artefactFileNames[2])
-    # 
-    # outputFile(generateAppendixB(data2[[1]], 
-    #                              data2[[19]], 
-    #                              data2[[38]]), 
-    #            artefactFileNames[3])
 }
 
 ##
@@ -284,6 +264,8 @@ if (length(args) != 1) { # incorrect number of cli arguments?
 } else if (file.exists(args)) { # does the input data exist?
     
     generateArtefacts()
+    
+    cat(successMessage)
     
 } else {
     
