@@ -1,11 +1,11 @@
 ---
 title: "OpenChain Compliance Automation"
-author: "Alexander Murphy"
+author: "Alexander Murphy - Orcro Limited"
 date: "`r Sys.Date()`"
 output:
   pdf_document: default
   html_document: default
-subtitle: Automating the generation of OpenChain compliance artefacts
+subtitle: Generating compliance artefacts
 ---
 
 
@@ -15,161 +15,160 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## OpenChain
 
-International standard (ISO/IEC 5230) lists requirements for a quality open source licence compliance program. The project homepage is here: https://www.openchainproject.org/; and the specificaiton and workgroup manage the development publicly on GitHub here: https://github.com/OpenChain-Project/License-Compliance-Specification.
+International standard (ISO/IEC 5230) lists requirements for a quality open source licence compliance program.^[OpenChain project homepage: [https://www.openchainproject.org/](https://www.openchainproject.org/)] The specificaiton and workgroup manage the development publicly on GitHub.^[Specification available on GitHub: [https://github.com/OpenChain-Project/License-Compliance-Specification](https://github.com/OpenChain-Project/License-Compliance-Specification)]
 
 The standard provides the following definition: 
 
-> 2.1 - compliance artifacts
-a collection of artifacts that represent the output of a compliance program and accompany the supplied software
+> *2.1 - Compliance artifacts*
 > 
-> Note: The collection may include (but is not limited to) one or more of the following: attribution notices, source code, build and install scripts, copy of licenses, copyright notices, modification notifications, written offers, open source component bill of materials, and SPDX documents.
+> *A collection of artifacts that represent the output of a compliance program and accompany the supplied software*
+> 
+> *Note: The collection may include (but is not limited to) one or more of the following: attribution notices, source code, build and install scripts, copy of licenses, copyright notices, modification notifications, written offers, open source component bill of materials, and SPDX documents.*
 
-These data are what we will automate in this demonstration (attribution notices and licence texts specifically, other artefacts may be required but this is not an exhaustive exercise, regardless, it is highly unlikely that the steps in this example will map exactly to your own use-case).
+Production of these data (the artefacts^[Artefacts - British engligh, artifacts, american english. Former used throughout.]) are what we will show via this demonstration. Attribution notices and licence texts specifically, although other artefacts may be required. This is not an exhaustive exercise, regardless, it is highly unlikely that the steps in this example will map exactly to your own use-cases.
 
 ## Tools
 
-OpenChain is a non-prescriptive standard. To (ab)use computer science terminology, OpenChain is declarative in nature, it tells you *what* to do, but you decide *how* to go about it. This example is a generalised method (rather, a collection of tools and processes) used frequently at Orcro to generate compliance artefacts.
+OpenChain is a non-prescriptive standard. To use computer science terminology, OpenChain is declarative, it tells you *what* to do, but you decide *how* to go about it. This demonstration is one generalisation of a method (rather, a collection of tools and processes) used frequently at Orcro to generate compliance artefacts.
 
-### Spelling
-
-Artefacts - British engligh, artifacts, american english. Former used throughout.
+There are numerous other tools which you may consider using to manage licence compliance, and, specifically, to generate the artefacts. Some of these are listed in Appendix A: Tools and Projects.
 
 ### Scancode toolkit
 
-Our favorite OSS SCA tool (https://github.com/nexB/scancode-toolkit). Fully featured, well supported, active community. Straightforward to integrate into existing pipelines (run Python script direct from the repo).
+Orcro's favorite OSS SCA tool (https://github.com/nexB/scancode-toolkit) is fully featured, well supported, and has an excellent community. It is straightforward to integrate into existing pipelines (run Python script direct from the repo).
 
-Runs comprehensive battery of regex patterns on source code for licence/copyright matches. Huge test suite. 
+The functionality scancode provides is essentially leveraging a comprehensive battery of regex patterns to `grep` source code for licence/copyright matches. The huge test suite means that it is has a high reliability.
 
 ### R
 
-Statistical computing programming language. This is the author's personal preference (a dark art) although Python would work, and bash scripts would also work. No libraries are required, just Base R.
-
-### Scripts
-
-These are the "glue" that holds togheter the pipeline. These will all be written in R.
+Statistical computing programming language. This is the author's personal preference although Python  and bash scripts would be more than suitable. No libraries are required, just "Base R". All the scripts used in this demonstration are R scripts.
 
 ### Git
 
-The code we review will be located in a Git repository. *this* repo (OpenChain...) contains a submodule to our demonstration project, OpenBLAS (more on this project below).
+The code we review will be located in a Git repository. *this* repo (where this pdf is stored) contains a submodule to the project used in this demonstration, OpenBLAS (more on this project below). Git may be used to track generation of materials and help to pin them to versions.
 
 ## Overview
 
-We begin by identifying what data we need to automate. This step is usually resource-intensive, so an arbitrary (and vetted) software product will be used for this example.
+We begin by identifying what data we need to automate. This step is usually resource-intensive, so an arbitrary (and pre-vetted by me) software product will be used for this example.
 
-Then we break-down the full pipeline into "components", and semi-manually run these to illustrate what the tools are doing. I.e., we run through producing the compliance artefacts once step-by-step, and see what happens when we run a "generate compliance artefacts" command in CI.
+Then we break-down the automation pipeline into "components", and semi-manually run these to illustrate what the tools are doing. In other words, we run through production of the compliance artefacts step-by-step, and see what would happen behind the scenes if we were to run a "generate compliance artefacts" command in CI.
 
-The output of the process (the compliance artefacts) will be shown. These will be in the form of plain text files, which can be compressed if required.
+The output of the process (the compliance artefacts) will then be shown. These will be in the form of plain text files, and these can be manipulated like any regular file, such as compressed or serialised, if required.
 
 ## Setting expectations
 
-Implementing the process on a CI system is not covered. 
+- Implementing the process on a CI system is not covered. 
+- This only covers generation of compliance artefacts for the application itself. It is likely that additional FOSS is used in any shipped product (Docker base images, GPU drivers, etc.) but this process is for the application layer only.
+- We won't consider legal requirements, such as how the jurisdiction your code is shipped to may affect your obligations.
+- Engineering considerations, such as caching SCA results.
 
-This only covers generation of compliance artefacts for the application itself. It is likely that additional FOSS is used in any shipped product (Docker container, GPU drivers, etc.) but this process is for the application layer only.
+## OpenBLAS
 
-We won't consider legal requirements, such as how the jurisdiction your code is shipped to may affect your obligations.
+BLAS (basic linear algebra subprograms) is a widely used library for matrix and vector calculations. The source is freely available^[The reference implementation [https://www.netlib.org/blas/](https://www.netlib.org/blas/)] but isn't licensed per se, certainly not under an open source licence, rather it has some unusual wording about being free to use but to add notices if anything is modified and to provide acknowledgement for the authors.
 
-We won't consider engineer considerations, such as caching SCA results.
-
-## The sample project
-
-### OpenBLAS
-
-BLAS (basic linear algebra subprograms) is a widely used library for matrix and vector calculations. It's open source, the reference implementation (from https://www.netlib.org/blas/) isn't "licensed" per se, rather it has some unusual wording about being free to use but to add notices if anything is modified and to provide acknowledgement for the authors.
-
-OpenBLAS has the BSD-3-Clause out-licence, and the full source (which we look at here) is available on GitHub (https://github.com/xianyi/OpenBLAS). We consider the compiled code where no additional third-party libraries have been included via `cmake`.
+On the other hand, OpenBLAS uses BSD-3-Clause for its out-licence, and the full source (which we look at here) is available on GitHub^[Repository for OpenBLAS: [https://github.com/xianyi/OpenBLAS](https://github.com/xianyi/OpenBLAS)]. We will consider the compiled code where no additional third-party libraries have been included via cmake.
 
 ## Identifying the requried artefacts
 
-### Questions to ask
+There are some typical questions you will *ask* when designing the automation system such as:
 
-What is *distributed*?
+- What is *distributed*?
+- Are there any *dependencies*?
+- *How* will the code be shipped?
+- Are there any *snippets* present?
 
-Are there any *dependencies*?
+In this case, all of the source code is provided in a monorepo. We can run our tools here without requiring any additional *source code* downloads^[We will download some information, but we'll cover that later].
 
-*How* will the code be shipped?
+Note that build tools don't end up in the distributed binary (typically), therefore there is no need to be concerned with licences they may be under, although cmake is distributed under BSD-3-Clause so this wouldn't be a significant issue anyway as it matches OpenBLAS.
 
-Are there any *snippets* present?
+As the main licence is BSD-3-Clause, in fact, all the licences are permissive, the obligations are straightforward: Provide copyright notices (all of them!) and the licence text(s).^[Another obligation is to *not* use the name of the project in marketing, but this does not impact the compliance artefacts r.e. openchain]
 
-In this case, all of the source code is provided in this monorepo. We can run our tools here without requiring any additional downloads.
+We also see that it doesn't matter whether the code is distributed as source or in binary form, the artefacts are required. Note that if distributed *as* source code, then the compliance materials *will be provided automatically as they are contained within the source itself*! But we consider the compiled case here, so we must provide the artefacts separately.
 
-Recall that build tools won't end up in the distributed binary, therefore you have no need to concern yourselves with licences for them (typically, but never seen a case where this is not the case).
+> Providing the full source code for components licensed permissively is not *required* but it may be one way to comply! Although, if you have more than one component with different obligations then things can get messy quickly, hence, automation...
 
-Licences are BSD-3-Clause, therefore our obligations are simply: Provide copyright notices (all of them!) and the licence text. * another obligation is to not use the name of the project in marketing, but this does not impact the compliance artefacts r.e. openchain
+## Identifying the source
 
-We also see that it doesn't matter whether the code is distributed as source or in binary form. The artefacts are required* note that if distributed as source code, then the compliance materials *will be provided automatically as they are contained within the source itself!*
+Once the required artefacts are identified, the next step is to identify *what source code* relates to the binary code. For this demonstration it is very straightforward, we are producing the OpenBLAS binary, compiled with no other third-party libraries, therefore, the source we must analyse (our data) is the raw monorepo source code for OpenBLAS.
 
-For this we assume the binary is distributed, and providing source code is unsuitable for some reason.
+```{bash, eval=F}
+git clone --depth=1 https://github.com/xianyi/OpenBLAS.git
+```
 
-Note: providing the full source code for components licensed permissively is not *required* but it may be one way to comply! Although, if you have more than one component with different obligations then things can get messy quickly, hence, automation...
+It's not necessary to clone the history of the source code, so we can lighten the load on the CI system simply by specifying only the most recent source with `--depth=1` (which we will assume our build is from). If we were using a specific version, then after the download completes we might want to track back to a specific commit with something like:
+
+```{bash, eval=F}
+git reset --hard ###
+```
+
+Replacing `###` with the commit hash. But we will use the most recent version.
 
 ## Initial SCA
 
-It is prudent to manually run a SCA before implementing any automation. Like shopping for bug-spray, it is important to know *what will work* before spending any money (or developer time, resources, etc.) on the thing. It would be disastrous to implement compliance automation and a year down-the-line realise that it wasn't identifying issues appropriately (or even worse, it *was* identifying them but you didn't notice)!
+With the required source code (input data to scancode) metaphorically in-hand, we can run our software composition analysis, or SCA scan. We're not scanning for anything other than OSS licensing metadata.
 
-Scancode can be run from the command-line. So a developer, who is working inside the development repo, can simply use:
+Scancode can be run from the command-line. So a developer, who is working inside the development repo, can simply use (or include the following in CI scripts):
 
 ```{bash, eval=F}
-pwd
-/home/demo/OpenChain-Artefact-Automation/OpenBLAS/
-scancode -clp -n 18 --csv ScanOut.csv .
+scancode -clp -n 18 --csv ScanOut.csv path/to/OpenBLAS
 ```
 
-which will run scancode on the source repo. This assume that scancode has been installed (added to path) et cetera (see Appendix A for simple scancode installation instructions).
+Which will run scancode on the OpenBLAS source repository that we previously cloned. This assumes that scancode has been installed (added to path et cetera), but see Appendix B: Scancode Installation for simple installation instructions.
 
-As this is the first time that we have extracted copyright information using scancode, we should take a look at the data it has provided us. It is typically of high quality, but there are sometimes things that are easy to check and verify.
+As this is the first time that we have extracted copyright information using scancode, we should take a look at the data it has provided us with. It is typically high quality, but there are sometimes things that deserve particular attention. Anyway, it is easy to do this.
 
-There are various ways of doing this, if you run the `--csv` output format then you can even load up the data into Excel and look at it that way. Here though, we'll use R.
+There are various ways of checking, for example, if scancode was run with the `--csv` output format then it can even be loaded up into Excel. Here though, we'll use R.
 
-```{r}
+```{r, comment=NA}
+# From the R cli, or this can be placed into an Rscript
 copyright_data <- read.csv("ScanOut.csv") # load the scan results
-licences <- unique(copyright_data$detected_license_expression_spdx) 
+
 # summarise 'unique' licences in the dataset (so we only see one of each result)
-licences # display them
+licences <- unique(copyright_data$detected_license_expression_spdx) 
+
+# display them
+licences
 ```
 
-These are SPDX IDs where one exists, or a licence reference (`LiceseRef` where there is an unknown detection).
+R has spat out this list of SPDX IDs^[Where one exists, the eagle-eyed amongst you may notice the empty quotation marks "" which indicate a file has no licence information. This is fine, as we *know* it is part of the OpenBLAS source code. However, metadata, such as REUSE (see Appendix A) may alleviate these null results.] and provided us with licence references for further information on certain files (`LiceseRef` where there is an unknown detection).
 
-There doesn't appear to be too much to review here, these are all permissive or variants of, except for that result of `LicenseRef-scancode-proprietary-license`. You should not be too alarmed at these results (at least in the first instance) because Scancode is quite *greedy* with its results. It will generate more false positives than omissions (it's generally better this way, as you can manually review the results, you cannot manually review what you do not know exists)!
+There doesn't appear to be too much to review here, these are all Permissive licences, or variants of one. Except for that result of `LicenseRef-scancode-proprietary-license`. You should not be too alarmed at these results (at least in the first instance) because Scancode is quite *greedy*. It will generate more false positives than omissions, and it's better this way as you can manually review the additional results (you cannot manually review what you do not know exists)!
 
-Let's double check this result, to see how often it appears, and what is triggering this result in the scan.
+Let's have a further look at this result, to see how often it appears, and what is triggering this result in the scan.
 
-```{r}
-copyright_data[copyright_data$detected_license_expression_spdx == "LicenseRef-scancode-proprietary-license", ]["path"] 
+```{r, comment=NA}
 # selecting results that match the expression in brackets [expression]
 # and then from the results, extract the path of the file (*where* the scan found it)
+copyright_data[copyright_data$detected_license_expression_spdx ==
+                 "LicenseRef-scancode-proprietary-license", ]["path"] 
 ```
 
-So the proprietary license result came from the LAPACKE readme. We won't go into this now, but assume that this check went well for the purposes of this demonstration, but there are a few more notes on this in Appendix 2, including the README file itself.
+So the proprietary license result came from the LAPACK docs. We don't need to worry about this because we're assuming we're compiling without third-party programs.^[You may be concerned here how we know this, and this is what was mentioned earlier, you can automate the heavy stuff but some domain knowledge is essential for these edge cases. Regardless, LAPACK is also under a semi-OSS licence, so even if we were compiling with it, we would not be concerned. Therefore, let's not attempt to remove it, we may have a rogue copyright notice but who doesn't like extra credit?]
 
 It would be good practice to verify all of the licence results, at least by sample, but as everything is permissive here there's unlikely to be any major issues, *and this aligns with our expectations and understanding of OpenBLAS*, so, we'll proceed with generating the artefacts.
 
 ## Generating artefacts
 
-Now that the scan results have been collected and reviewed for problems, we can use whatever means at our disposal to generate appropriate artefacts. This is an inherently 'wooly' statement, because it depends on the licences as to what artefacts must be provided. There are also various way in which the artefacts *could* be provided for any particular licence. What follows is appropriate for permissive licences, OpenChain compliance, and note that no source code provision is required.
+Now that the scan results have been collected and reviewed for issues, we can use whatever means at our disposal to generate appropriate artefacts. There are various ways in which artefacts *could* be provided for any particular licence, so what follows is appropriate for permissive licences, OpenChain compliance, and where no source code provision is required.
 
-Some scripts have been developed by Orcro for this particular task, and are available under Apache-2.0 for you to freely use yourselves, or to learn more about generating artefacts, if you wish: https://github.com/galacticalex/compliance-artefact-generator, they are also as a submodule in this demo repository.
+Some scripts have been developed by Orcro for this particular task, and are available under Apache-2.0 for you to freely use yourselves, or to learn more about generating artefacts if you wish to^[Scripts: [git reset --hard 9a36b9e79tbb9132c7](git reset --hard 9a36b9e79tbb9132c7)] and they are also as a submodule in this demo repository.
 
-We're going to use a simplified script, which takes raw scancode output and produces the files. It has no user-interface to speak of however. Let's see how it works:
+We're going to use a simplified script, which takes raw scancode output and produces the artefacts. It has no user-interface to speak of however, so let's see how it works step-by-step. This is what you would run at a CLI, or put into a script:
 
 ```{bash, eval=F}
 Rscript ScanToArtefacts.R ScanOut.csv
 ```
 
-We use the `Rscript` command line tool to run the script `ScanToArtefacts.R` on the SCA data file `ScanOut.csv`. This is very simply to put into a meta-level script for automation, it may simply be pasted into a `.sh` file.
+We use the `Rscript` command line tool to run the script `ScanToArtefacts.R` on the SCA data file `ScanOut.csv`. Briefly, before we look at the script, let's once again look at the variable which scancode is providing us with:
 
-### Aside, scancode data
-
-```{r}
-names(copyright_data) # view the variables that scancode extracts
+```{r, comment=NA}
+# view the variables that scancode extracts)
+names(copyright_data)
 ```
 
 You can see there is quite a lot going on under-the-hood with scancode. In particular look at those `license_match*` variables. These are columns in the `.csv` output file. They report how *sure* scancode is that it has found a match. We'll simplify this analysis and assume that results are reliable (and this is typically the case).
 
-From before, there are some scancode results that were not SPDX standard IDs, I have replaced these with appropriate data - we won't go through this now.
-
-### Resuming
-
-Here's a snippet of the script:
+Here's a snippet of the controlling logic of the script:
 
 ```{r, eval=F}
 if (length(args) != 1) { # incorrect number of cli arguments?
@@ -184,11 +183,31 @@ if (length(args) != 1) { # incorrect number of cli arguments?
 }
 ```
 
-The `generateArtefacts()` function is key here.
+It is not important to know what is going on here, but note that there is some error checking, and see the statement `any(artefactFileNames %in% dir())`, this is checking that there are no existing artefacts so that we don't accidentally overwrite any data. If all goes well with the checks, the  `generateArtefacts()` function is called, shown here:
 
 ```{r, eval=F}
 generateArtefacts = function() {
     sca_data <- dataPrep(read.csv(args[1])) # tidy the data
+    ...
+```
+
+First, some effort is spent preparing the raw scancode data into something more reasonable, with `dataPrep()`, this is because scancode output is still pretty raw (only one-step above literal source code!). It also contains various fields we're not interested in, so those get cleared out:
+
+```{r, eval=F}
+dataPrep <- function(raw_sca) {
+    # subset only relevant fields (1, 4, 20)
+    # then delete empty rows (will have contained now-unnecessary data)
+    out <- raw_sca[!(raw_sca$detected_license_expression_spdx == "" & 
+                  raw_sca$copyright == ""), c(1, 4, 20)]
+    out[out == ''] <- NA
+    aggregate(. ~ path, data = out, FUN = na.omit, na.action = "na.pass")
+}
+```
+
+Next we use a helper function `outputFile()` a bunch of times, (once for each of the artefacts).
+
+```{r, eval=F}
+    ...
     # generate the artefacts - there is some unnecessary moving of data around 
     # in memory, but this simplifies the script a bit (and it's sufficiently
     # performant anyway)
@@ -198,7 +217,7 @@ generateArtefacts = function() {
 }
 ```
 
-First, some effort is spent preparing the raw scancode data into something more reasonable. We noted earlier that scancode has a huge battery of tests, and the resulting data, while valuable, is messy. Tidying that up makes the remaining artefact generation quite simple. Here's an example of generating the licence text artefact:
+We noted earlier that scancode has a huge battery of tests, and the resulting data, while valuable, is messy. Tidying that up makes the remaining artefact generation quite simple. This will be the last code snippet we look at, but here's an example of generating the licence text artefacts:
 
 ```{r, eval=F}
 generateAppendixA = function(tidy_data) {
@@ -239,9 +258,9 @@ generateAppendixA = function(tidy_data) {
 
 ```
 
-This is just one of the artefacts, we won't look at the others now. But notice that some further preparation of the data is done (which is specific for this artefact, so it makes sense to do it here) before raw licence texts are downloaded from a reputable repository. There is then some logic to concatenate all the licences in a readable format into the single artefact file. There is also some cli output to let a user know that the internet is being accessed, this can be removed if the script is used in an automated pipeline.
+Notice that some further preparation of the data is done (which is specific for this artefact, so it makes sense to do it here) before raw licence texts are downloaded from a reputable repository^[There is some risk in relying on a third-party source for data like this (it may be taken down without your knowledge). The script will fail gracefully, but this is more of a cop-out and should be handled strategically.]. There is then some logic to concatenate all the licences in a readable format into the single artefact file. There is also some cli output to let a user know that the internet is being accessed, this can be removed if the script is used in an automated pipeline.
 
-The entire script is only a couple hundred lines long. We extract relevant data from the SCA results, then wrangle it into a suitable output format. There are some quality of life-checks (ensuring that no data is overwritten). The file output is handled by a helper function elsewere in the script.
+The entire script is only a couple hundred lines long, and, in essence, we are simply extracting relevant data from the SCA results, and then wrangling it into a suitable output format. There are some quality of life-checks (ensuring that no data is overwritten). The file output is handled by a helper function elsewere in the script.
 
 After running the script the working directory will contain the following files:
 
@@ -297,7 +316,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 --------------------
 ```
 
-Here's the BSD-3-Clause licence, there are others in the file. And lastly, here's the head of the copyright notice artefact:
+Here's the BSD-3-Clause licence^[Apologies for the formatting, it is verbatim the BSD-3-Clause with long lines (which have no newline characters) and it's hard to wrangle that in a fixed width doc.], there are others in the file. And lastly, here's the head of the copyright notice artefact:
 
 ```{}
 # Appendix B: Notices and Attribution
@@ -320,21 +339,39 @@ Copyright statement(s): Copyright (c) 2014, The OpenBLAS Project
 
 We can see that each file (demarkated by lots of dashes) is noted, alongside the copyright statements that were extracted for that file. There are 
 
-```{bash}
+```{bash, comment=NA}
 wc -l Licensing_Appendix_B.md
 ```
 
-... quite a few records. Divide by five (each statement has surrounding whitespace, dashes, filename) and we calculate there are approximately five thousand copyright statements in OpenBLAS. 
-
-> Note that any files which lack copyright statements are not listed. This is acceptable as BSD-3-Clause obligates you to reproduce the statements, *not* the source code
+... quite a few notices! Divide by five (each statement has surrounding whitespace, dashes, filename) and we calculate there are approximately five thousand copyright statements in OpenBLAS. ^[Note that any files which lack copyright statements are not listed. This is acceptable as BSD-3-Clause obligates you to reproduce the statements, *not* the source code.]
 
 ## Conclusion
 
-We've looked at an end-to-end process for generating compliance artefacts from raw source code. Obviously this is a simplified process for this demonstration, there are countless nuances which could not possibly be documented (author's note: every time I do an analysis, there is something new). This is the challenge of automating compliance. 
+We've looked at an end-to-end process for generating compliance artefacts from raw source code. Obviously this is a simplified process for this demonstration, there are countless nuances which could not possibly be documented ^[Every time I do an analysis, there is something new]. This is the challenge of automating compliance. 
 
-The heavy lifting can be left to SCA tools and scripts, as described above. But the devil is very much in the detail with compliance, and this requires some diligent analysis, preferably in the policy stage to prevent rampant OSS code from causing licensing issues right before a deployment.
+The heavy lifting can be left to SCA tools and scripts, as we've described above. But the devil is very much in the detail with compliance, and this requires some diligent analysis, preferably in the policy stage to prevent rampant OSS code from causing licensing issues right before a deployment.
 
-## Appendix A: Scancode installation
+\newpage
+
+## Appendix A: Tools and Projects
+
+**ORT** The open source review toolkit. This is a substantial project and is the closest an open source project has come to an "off-the-shelf" complete solution to compliance. That said, setup is considerable as it provides a kitchen-sink-first approach.
+
+[https://oss-review-toolkit.org/ort/](https://oss-review-toolkit.org/ort/)
+
+**REUSE** The REUSE specification is a simple amalgamation of a CLI tool and instructions for labelling the copyright attribution in source files. Integrating a REUSE compliant project into your projects will be straightforward from a compliance perspective. It also provides a framework for tracking the IP inventory of your code.
+
+[https://reuse.software/](https://reuse.software/)
+
+**Syft** A good attempt to generate SBOMs and materials from Docker containers. It is not yet plug-and-play ready, however, containers are notoriously difficult for licence compliance so this tool may provide some benefit.
+
+[https://github.com/anchore/syft](https://github.com/anchore/syft)
+
+**Open Source Tooling Group** Provides copious materials for adding knowledge to a compliance program. The materials are made available under an open source licence.
+
+[https://github.com/Open-Source-Compliance/Sharing-creates-value](https://github.com/Open-Source-Compliance/Sharing-creates-value)
+
+## Appendix B: Scancode installation
 
 `cd` to the installation directory, then
 
@@ -348,10 +385,10 @@ Running `./scancode --help` will setup scancode for first use. There are other m
 
 ## Appendix B: Intel's `proprietary-license` result
 
-The full README is here:
+Here's a snippet of the LAPACKE readme
 
-```{bash}
-cat OpenBLAS/lapack-netlib/LAPACKE/README
+```{bash, comment=NA}
+head -n 30 OpenBLAS/lapack-netlib/LAPACKE/README
 ```
 
-This requires some further analysis, however, it is highly likely that in the "INTEL TERMS OF SERVICE" that such code is licensed freely with the disclaimer.
+This would normally require further analysis, and potentially the involvement of legal teams despite it being highly likely in the "INTEL TERMS OF SERVICE" that such code is licensed freely with the disclaimer.
