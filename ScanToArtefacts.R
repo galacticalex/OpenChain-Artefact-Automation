@@ -135,7 +135,7 @@ appendixBText <- "# Appendix B: Notices and Attribution"
 genericFileContent <- c(overviewText, appendixAText, appendixBText)
 
 ##
-# File Content End ----
+# End section ----
 ##   
 
 
@@ -144,6 +144,8 @@ genericFileContent <- c(overviewText, appendixAText, appendixBText)
 ##
 
 outputFile <- function(fileText, fileName) {
+    
+    # open a connection and write the file contents
     
     write(x = fileText, file = fileName)
     
@@ -168,7 +170,7 @@ generateOverviewText <- function(tidy_data) {
     # This is hard-coded for convenience as it is known these artefacts are for
     # a single library
     
-    component_name <- "\n\nOpenBlas"
+    component_name <- "\n\nOpenBLAS"
     
     out_licence <- "BSD-3-Clause"
     
@@ -245,7 +247,7 @@ generateArtefacts = function() {
 }
 
 ##
-# Function Definitions End ----
+# End section ----
 ##
 
 
@@ -274,7 +276,7 @@ if (length(args) != 1) { # incorrect number of cli arguments?
 }
 
 ##
-# Program Logic End ----
+# End section ----
 ##
 
 

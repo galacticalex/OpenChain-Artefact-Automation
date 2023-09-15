@@ -172,8 +172,74 @@ From before, there are some scancode results that were not SPDX standard IDs, I 
 Here's a snippet of the script:
 
 ```{r, eval=F}
-# main function here
+if (length(args) != 1) { # incorrect number of cli arguments?
+    cat(errorArgsNumber)
+} else if (any(artefactFileNames %in% dir())) { # any pre-existing output files?
+    cat(errorFileExists)
+} else if (file.exists(args)) { # does the input data exist?
+    generateArtefacts()
+    cat(successMessage)
+} else {
+    cat(errorInputMissing) # if input data doesn't exist
+}
 ```
+
+The `generateArtefacts()` function is key here.
+
+```{r, eval=F}
+generateArtefacts = function() {
+    sca_data <- dataPrep(read.csv(args[1])) # tidy the data
+    # generate the artefacts - there is some unnecessary moving of data around 
+    # in memory, but this simplifies the script a bit (and it's sufficiently
+    # performant anyway)
+    outputFile(generateOverviewText(sca_data), "Licensing_Overview.md")
+    outputFile(generateAppendixA(sca_data), "Licensing_Appendix_A.md")
+    outputFile(generateAppendixB(sca_data), "Licensing_Appendix_B.md")
+}
+```
+
+First, some effort is spent preparing the raw scancode data into something more reasonable. We noted earlier that scancode has a huge battery of tests, and the resulting data, while valuable, is messy. Tidying that up makes the remaining artefact generation quite simple. Here's an example of generating the licence text artefact:
+
+```{r, eval=F}
+generateAppendixA = function(tidy_data) {
+    # tidying list of licences
+    l <- unlist(strsplit(unlist(tidy_data$detected_license_expression_spdx), " AND "))
+    l <- unique(l)
+    l <- l[l != "N/A"]
+    l <- l[-grep("License", l)]
+    l <- gsub("[\\(|\\)]", "", l)
+    
+    # setup urls for downloading
+    first <- rep("https://raw.githubusercontent.com/spdx/license-list-data/master/text/", length(l))
+    last <- rep(".txt", length(l))
+    dls <- paste0(first, l, last)
+    
+    # local "out" is a buffer, if one dl fails, the script will abort and may 
+    # leave artefacts
+    out <- appendixAText
+    
+    # useful info for the user
+    cat("\n\n Licence texts will now be downloaded...\n\n")
+    Sys.sleep(2)
+    
+    for (l in dls) {
+        download.file(l, destfile = "licence.tmp", 
+                      method = "wget", 
+                      quite = TRUE)
+        out = paste0(out, "\n\n--------------------\n\n", 
+                     readChar("licence.tmp", file.info("licence.tmp")$size))
+        file.remove("licence.tmp")
+    }
+    
+    cat("\n\n Removing temporary files...\n\n")
+    Sys.sleep(2)
+    
+    out
+}
+
+```
+
+This is just one of the artefacts, we won't look at the others now. But notice that some further preparation of the data is done (which is specific for this artefact, so it makes sense to do it here) before raw licence texts are downloaded from a reputable repository. There is then some logic to concatenate all the licences in a readable format into the single artefact file. There is also some cli output to let a user know that the internet is being accessed, this can be removed if the script is used in an automated pipeline.
 
 The entire script is only a couple hundred lines long. We extract relevant data from the SCA results, then wrangle it into a suitable output format. There are some quality of life-checks (ensuring that no data is overwritten). The file output is handled by a helper function elsewere in the script.
 
@@ -183,7 +249,90 @@ After running the script the working directory will contain the following files:
 - Licensing_Appendix_1.md
 - Licensing_Appendix_2.md
 
-And we can view the contents of each of these files - they are in plain text. 
+And we can view the contents of each of these files - they are in plain text. Here's the `Overview` in its entirety:
+
+```{}
+# Overview
+
+This software contains a number of open source components. For a summary, see 
+below. For the relevant licence texts, see Appendix A. For the relevant notices 
+and attributions et cetera, see Appendix B.
+
+Not all components listed may be incorporated in, or may necessarily have 
+generated derivative works which are incorporated in the firmware, but were 
+used during the build process.
+
+Where a range of dates is given after a copyright notice, this should be taken 
+to imply that copyright is asserted for every year within that range, inclusive 
+of the years stated.
+
+## Components and Licences
+
+OpenBLAS - BSD-3-Clause
+
+```
+
+This is mostly boilerplate, but at the bottom there is a list of the components in the software. There's only one here, as we're reviewing a library with no transitive dependencies (OpenBLAS has some which you can link to, but we are assuming these are not used).
+
+There's also the licence `Appendix`, whose generating function we looked at earlier:
+
+```{}
+# Appendix A: Licence Texts
+
+--------------------
+
+Copyright (c) <year> <owner>. 
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+--------------------
+```
+
+Here's the BSD-3-Clause licence, there are others in the file. And lastly, here's the head of the copyright notice artefact:
+
+```{}
+# Appendix B: Notices and Attribution
+
+---------------
+
+File: OpenBLAS/benchmark/amax.c
+Copyright statement(s): Copyright (c) 2016, The OpenBLAS Project
+
+---------------
+
+File: OpenBLAS/benchmark/amin.c
+Copyright statement(s): Copyright (c) 2016, The OpenBLAS Project
+
+---------------
+
+File: OpenBLAS/benchmark/asum.c
+Copyright statement(s): Copyright (c) 2014, The OpenBLAS Project
+```
+
+We can see that each file (demarkated by lots of dashes) is noted, alongside the copyright statements that were extracted for that file. There are 
+
+```{bash}
+wc -l Licensing_Appendix_B.md
+```
+
+... quite a few records. Divide by five (each statement has surrounding whitespace, dashes, filename) and we calculate there are approximately five thousand copyright statements in OpenBLAS. 
+
+> Note that any files which lack copyright statements are not listed. This is acceptable as BSD-3-Clause obligates you to reproduce the statements, *not* the source code
+
+## Conclusion
+
+We've looked at an end-to-end process for generating compliance artefacts from raw source code. Obviously this is a simplified process for this demonstration, there are countless nuances which could not possibly be documented (author's note: every time I do an analysis, there is something new). This is the challenge of automating compliance. 
+
+The heavy lifting can be left to SCA tools and scripts, as described above. But the devil is very much in the detail with compliance, and this requires some diligent analysis, preferably in the policy stage to prevent rampant OSS code from causing licensing issues right before a deployment.
 
 ## Appendix A: Scancode installation
 
