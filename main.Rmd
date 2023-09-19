@@ -58,7 +58,7 @@ The output of the process (the compliance artefacts) will then be shown. These w
 ## Setting expectations
 
 - Implementing the process on a CI system is not covered. 
-- This only covers generation of compliance artefacts for the application itself. It is likely that additional FOSS is used in any shipped product (Docker base images, GPU drivers, etc.) but this process is for the application layer only.
+- This only covers generation of compliance artefacts for a single library at the application layer. It is highly likely that additional FOSS is used throughout any shipped product (Docker base images, GPU drivers, etc.) but this process is for the individual library only.
 - We won't consider legal requirements, such as how the jurisdiction your code is shipped to may affect your obligations.
 - Engineering considerations, such as caching SCA results.
 
