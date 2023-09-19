@@ -117,7 +117,21 @@ Which will run scancode on the OpenBLAS source repository that we previously clo
 
 As this is the first time that we have extracted copyright information using scancode, we should take a look at the data it has provided us with. It is typically high quality, but there are sometimes things that deserve particular attention. Anyway, it is easy to do this.
 
-There are various ways of checking, for example, if scancode was run with the `--csv` output format then it can even be loaded up into Excel. Here though, we'll use R.
+Quickly, look at the file size of our data 
+
+```{bash, comment=NA}
+du ScanOut.csv
+```
+
+That's 5972Kb a.k.a. 5.9Mb, which is a *lot* to review.
+
+There are various ways of browsing this data (if scancode was run with the `--csv` output format as we have done, then it can even be loaded up into Excel). 
+
+Here though, we'll use R.
+
+```{bash, eval=F}
+R
+```
 
 ```{r, comment=NA}
 # From the R cli, or this can be placed into an Rscript
@@ -344,6 +358,12 @@ wc -l Licensing_Appendix_B.md
 ```
 
 ... quite a few notices! Divide by five (each statement has surrounding whitespace, dashes, filename) and we calculate there are approximately five thousand copyright statements in OpenBLAS. ^[Note that any files which lack copyright statements are not listed. This is acceptable as BSD-3-Clause obligates you to reproduce the statements, *not* the source code.]
+
+These artefacts can then be located wherever they need to be, and zipped first if required.
+
+```{bash, commet=NA}
+zip OSS_License_Compliance_Artefacts.zip Licensing_*
+```
 
 ## Conclusion
 
